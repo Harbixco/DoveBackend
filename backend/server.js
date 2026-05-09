@@ -10,7 +10,11 @@ dotenv.config();
 const app = express();
 
 // --- MIDDLEWARE ---
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://your-frontend.vercel.app",
+  }),
+);
 app.use(express.json());
 
 // --- STATIC FOLDER FOR IMAGES ---
