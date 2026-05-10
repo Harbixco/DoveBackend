@@ -12,7 +12,11 @@ const app = express();
 // --- MIDDLEWARE ---
 app.use(
   cors({
-    origin: "https://your-frontend.vercel.app",
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://dove-five.vercel.app",
+    ],
   }),
 );
 app.use(express.json());
