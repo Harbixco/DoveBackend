@@ -38,7 +38,7 @@ router.post(
     try {
       const { name, price, oldPrice, description, category, brand } = req.body;
 
-      if (!req.files || req.files.length < 3) {
+      if (!req.files || req.files.length < 1) {
         if (req.files && req.files.length > 0) {
           for (const file of req.files) {
             await destroyCloudinaryImage(file.path);
@@ -87,7 +87,7 @@ router.put(
       }
 
       if (req.files && req.files.length > 0) {
-        if (req.files.length < 3) {
+        if (req.files.length < 1) {
           for (const file of req.files) {
             await destroyCloudinaryImage(file.path);
           }

@@ -23,8 +23,13 @@ const productSchema = new mongoose.Schema({
 
   images: {
     type: [String],
-    required: true,
-    validate: [arrayLimit, "{PATH} must have at least 3 images"],
+    required: [true, "At least one image is required"],
+    validate: {
+      validator: function (v) {
+        return Array.isArray(v) && v.length > 0;
+      },
+      message: "You must upload at least one image.",
+    },
   },
 
   // ✅ Must match exactly what your AddProduct/EditProduct frontend sends
