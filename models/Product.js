@@ -31,7 +31,6 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ["Powerbank", "Solar Tank", "Electronics", "Shoes"],
     default: "Powerbank",
   },
 
@@ -39,15 +38,6 @@ const productSchema = new mongoose.Schema({
   brand: {
     type: String,
     required: true,
-    enum: [
-      "itel",
-      "samsung",
-      "infinix",
-      "baseus",
-      "oraimo",
-      "techno",
-      "others",
-    ],
     default: "itel",
   },
 
