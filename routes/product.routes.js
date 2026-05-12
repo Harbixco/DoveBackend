@@ -2,7 +2,20 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
 const { protect } = require("../middleware/auth.middleware");
-const { upload, cloudinary } = require("../config/cloudinary"); // ✅ replaces multer disk config
+const { upload, cloudinary } = require("../config/cloudinary");
+
+// ─── Helper: safely delete an image from Cloudinary ──────────────────────────
+// Only attempts deletion if it's a real Cloudinary URL.
+// Old /uploads/ paths are silently skipped — those files are already gone.
+const destroyCloudinaryImage = async (imgUrl) => {
+  if (!imgUrl || !imgUrl.startsWith("https://res.cloudinary.com")) return;
+  const segments = imgUrl.split("/");
+  const publicId = segments
+    .slice(-2)
+    .join("/")
+    .replace(/\.[^/.]+$/, "");
+  await cloudinary.uploader.destroy(publicId);
+};
 
 // --- ROUTES ---
 
@@ -26,10 +39,9 @@ router.post(
       const { name, price, oldPrice, description, category, brand } = req.body;
 
       if (!req.files || req.files.length < 3) {
-        // ✅ If upload failed mid-way, delete any that made it to Cloudinary
         if (req.files && req.files.length > 0) {
           for (const file of req.files) {
-            await cloudinary.uploader.destroy(file.filename);
+            await destroyCloudinaryImage(file.path);
           }
         }
         return res
@@ -41,7 +53,6 @@ router.post(
         return res.status(400).json({ message: "Name and price are required" });
       }
 
-      // ✅ Cloudinary gives us file.path which is already the full https:// URL
       const imageUrls = req.files.map((file) => file.path);
 
       const product = new Product({
@@ -77,31 +88,23 @@ router.put(
 
       if (req.files && req.files.length > 0) {
         if (req.files.length < 3) {
-          // ✅ Clean up Cloudinary uploads if validation fails
           for (const file of req.files) {
-            await cloudinary.uploader.destroy(file.filename);
+            await destroyCloudinaryImage(file.path);
           }
           return res
             .status(400)
             .json({ message: "If updating images, provide at least 3" });
         }
 
-        // ✅ Delete the OLD images from Cloudinary before saving new ones
+        // Delete old images from Cloudinary only if they are Cloudinary URLs
+        // Old /uploads/ paths are skipped safely
         const existingProduct = await Product.findById(req.params.id);
         if (existingProduct && existingProduct.images.length > 0) {
           for (const imgUrl of existingProduct.images) {
-            // Extract the public_id from the Cloudinary URL
-            // e.g. "https://res.cloudinary.com/.../dove-phoneworld/abc123" → "dove-phoneworld/abc123"
-            const segments = imgUrl.split("/");
-            const publicId = segments
-              .slice(-2)
-              .join("/")
-              .replace(/\.[^/.]+$/, "");
-            await cloudinary.uploader.destroy(publicId);
+            await destroyCloudinaryImage(imgUrl);
           }
         }
 
-        // ✅ Save new Cloudinary URLs
         updateData.images = req.files.map((file) => file.path);
       }
 
@@ -128,15 +131,11 @@ router.delete("/:id", protect, async (req, res, next) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    // ✅ Delete all images from Cloudinary before removing the product
+    // Delete from Cloudinary only if URL is a Cloudinary URL
+    // Old /uploads/ paths are skipped — files are already gone from Render's disk
     if (product.images && product.images.length > 0) {
       for (const imgUrl of product.images) {
-        const segments = imgUrl.split("/");
-        const publicId = segments
-          .slice(-2)
-          .join("/")
-          .replace(/\.[^/.]+$/, "");
-        await cloudinary.uploader.destroy(publicId);
+        await destroyCloudinaryImage(imgUrl);
       }
     }
 
