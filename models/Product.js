@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 function arrayLimit(val) {
-  return val.length >= 3;
+  return val.length >= 1;
 }
 
 const productSchema = new mongoose.Schema({
